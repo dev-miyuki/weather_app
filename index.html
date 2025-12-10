@@ -89,55 +89,55 @@
 
       <div class="row justify-content-center">
         <!-- Temperature Card -->
-        <div class="col-md-5">
-          <div class="card temp-card h-100">
-            <div class="card-body text-center">
-              <h5 class="card-title">Temperature</h5>
-              <div class="my-3">
-                <span id="temperature" class="value">--</span>
-                <span class="unit">°C</span>
-              </div>
-              <div id="temp-timestamp" class="last-updated">--</div>
+        <div class="col-md-12">
+            <div class="col-md-6">
+                <div class="card temp-card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Temperature</h5>
+                        <div class="my-3">
+                            <span id="temperature" class="value">--</span>
+                            <span class="unit">°C</span>
+                        </div>
+                        <div id="temp-timestamp" class="last-updated">--</div>
+                    </div>
+                </div>
             </div>
-          </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title text-center">Temperature Over Time</h5>
+                        <div class="chart-container">
+                            <canvas id="tempChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Humidity Card -->
-        <div class="col-md-5">
-          <div class="card humidity-card h-100">
-            <div class="card-body text-center">
-              <h5 class="card-title">Humidity</h5>
-              <div class="my-3">
-                <span id="humidity" class="value">--</span>
-                <span class="unit">%</span>
-              </div>
-              <div id="humidity-timestamp" class="last-updated">--</div>
+        <div class="col-md-12">
+            <div class="col-md-6">
+                <div class="card humidity-card h-100">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Humidity</h5>
+                        <div class="my-3">
+                            <span id="humidity" class="value">--</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div id="humidity-timestamp" class="last-updated">--</div>
+                    </div>
+                </div>
             </div>
-          </div>
+            <div class="col-md-">       
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title text-center">Humidity Over Time</h5>
+                        <div class="chart-container">
+                            <canvas id="humidityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-
-      <!-- Charts Section -->
-      <div class="row justify-content-center mt-4">
-        <div class="col-12">
-          <div class="card mb-4">
-            <div class="card-body">
-              <h5 class="card-title text-center">Temperature Over Time</h5>
-              <div class="chart-container">
-                <canvas id="tempChart"></canvas>
-              </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title text-center">Humidity Over Time</h5>
-              <div class="chart-container">
-                <canvas id="humidityChart"></canvas>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <script>
