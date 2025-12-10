@@ -12,6 +12,8 @@
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
       .card {
         margin: 10px;
@@ -49,6 +51,12 @@
       .datetime-value {
         font-size: 1.8rem;
         font-weight: 500;
+      }
+      .chart-container {
+        position: relative;
+        margin: auto;
+        height: 300px;
+        margin-bottom: 20px;
       }
     </style>
   </head>
@@ -108,6 +116,28 @@
           </div>
         </div>
       </div>
+
+      <!-- Charts Section -->
+      <div class="row justify-content-center mt-4">
+        <div class="col-12">
+          <div class="card mb-4">
+            <div class="card-body">
+              <h5 class="card-title text-center">Temperature Over Time</h5>
+              <div class="chart-container">
+                <canvas id="tempChart"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title text-center">Humidity Over Time</h5>
+              <div class="chart-container">
+                <canvas id="humidityChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
@@ -126,19 +156,113 @@
       // Initialize Firebase
       firebase.initializeApp(firebaseConfig);
       const database = firebase.database();
-
-      // Reference to the database location
       const dhtRef = database.ref("dht11");
+
+      // Chart variables
+      let tempChart, humidityChart;
+      const maxDataPoints = 20; // Number of data points to show
+      const tempData = Array(maxDataPoints).fill(null);
+      const humidityData = Array(maxDataPoints).fill(null);
+      const timeLabels = Array(maxDataPoints).fill('');
+
+      // Initialize charts
+      function initCharts() {
+        const tempCtx = document.getElementById('tempChart').getContext('2d');
+        const humidityCtx = document.getElementById('humidityChart').getContext('2d');
+        
+        // Common chart options
+        const chartOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: {
+            duration: 0 // Disable animation for better performance
+          },
+          scales: {
+            x: {
+              display: true,
+              title: {
+                display: true,
+                text: 'Time'
+              }
+            },
+            y: {
+              display: true,
+              title: {
+                display: true
+              }
+            }
+          }
+        };
+
+        // Temperature Chart
+        tempChart = new Chart(tempCtx, {
+          type: 'line',
+          data: {
+            labels: timeLabels,
+            datasets: [{
+              label: 'Temperature (°C)',
+              data: tempData,
+              borderColor: 'rgb(255, 99, 132)',
+              backgroundColor: 'rgba(255, 99, 132, 0.1)',
+              borderWidth: 2,
+              tension: 0.1,
+              fill: true
+            }]
+          },
+          options: {
+            ...chartOptions,
+            scales: {
+              ...chartOptions.scales,
+              y: {
+                ...chartOptions.scales.y,
+                title: {
+                  display: true,
+                  text: 'Temperature (°C)'
+                }
+              }
+            }
+          }
+        });
+
+        // Humidity Chart
+        humidityChart = new Chart(humidityCtx, {
+          type: 'line',
+          data: {
+            labels: timeLabels,
+            datasets: [{
+              label: 'Humidity (%)',
+              data: humidityData,
+              borderColor: 'rgb(54, 162, 235)',
+              backgroundColor: 'rgba(54, 162, 235, 0.1)',
+              borderWidth: 2,
+              tension: 0.1,
+              fill: true
+            }]
+          },
+          options: {
+            ...chartOptions,
+            scales: {
+              ...chartOptions.scales,
+              y: {
+                ...chartOptions.scales.y,
+                title: {
+                  display: true,
+                  text: 'Humidity (%)'
+                },
+                min: 0,
+                max: 100
+              }
+            }
+          }
+        });
+      }
 
       // Update date and time
       function updateDateTime() {
         const now = new Date();
-        
-        // Update date (e.g., "December 10, 2025")
         const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
         document.getElementById('current-date').textContent = now.toLocaleDateString(undefined, dateOptions);
         
-        // Update time (e.g., "11:45:30 PM")
         const timeOptions = { 
           hour: '2-digit', 
           minute: '2-digit', 
@@ -148,34 +272,64 @@
         document.getElementById('current-time').textContent = now.toLocaleTimeString(undefined, timeOptions);
       }
 
-      // Update date and time immediately and then every second
-      updateDateTime();
-      setInterval(updateDateTime, 1000);
-
-      // Listen for data changes
-      dhtRef.on("value", (snapshot) => {
-        const data = snapshot.val();
-        if (data) {
-          // Update temperature
-          if (data.temperature) {
-            document.getElementById("temperature").textContent = data.temperature.toFixed(1);
-            document.getElementById("temp-timestamp").textContent = `Updated: ${formatTimestamp(data.timestamp)}`;
-          }
-
-          // Update humidity
-          if (data.humidity) {
-            document.getElementById("humidity").textContent = data.humidity.toFixed(1);
-            document.getElementById("humidity-timestamp").textContent = `Updated: ${formatTimestamp(data.timestamp)}`;
-          }
-        }
-      });
-
       // Format timestamp
       function formatTimestamp(timestamp) {
         if (!timestamp) return '--';
         const date = new Date(timestamp);
         return date.toLocaleTimeString();
       }
+
+      // Add new data point to the charts
+      function addDataPoint(temperature, humidity, timestamp) {
+        // Shift all data points to the left
+        tempData.shift();
+        humidityData.shift();
+        timeLabels.shift();
+        
+        // Add new data points
+        const date = new Date(timestamp);
+        timeLabels.push(date.toLocaleTimeString());
+        tempData.push(temperature);
+        humidityData.push(humidity);
+        
+        // Update charts
+        tempChart.update('none');
+        humidityChart.update('none');
+      }
+
+      // Initialize charts when the page loads
+      document.addEventListener('DOMContentLoaded', () => {
+        initCharts();
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        
+        // Listen for data changes
+        dhtRef.on("value", (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            // Update temperature
+            if (data.temperature) {
+              document.getElementById("temperature").textContent = data.temperature.toFixed(1);
+              document.getElementById("temp-timestamp").textContent = `Updated: ${formatTimestamp(data.timestamp)}`;
+            }
+
+            // Update humidity
+            if (data.humidity) {
+              document.getElementById("humidity").textContent = data.humidity.toFixed(1);
+              document.getElementById("humidity-timestamp").textContent = `Updated: ${formatTimestamp(data.timestamp)}`;
+            }
+            
+            // Update charts if we have both temperature and humidity
+            if (data.temperature && data.humidity) {
+              addDataPoint(
+                parseFloat(data.temperature),
+                parseFloat(data.humidity),
+                data.timestamp
+              );
+            }
+          }
+        });
+      });
     </script>
   </body>
 </html>
