@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 DHT11 Monitor</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        .card {
+            margin: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .temp-card {
+            border-top: 5px solid #ff6b6b;
+        }
+        .humidity-card {
+            border-top: 5px solid #4dabf7;
+        }
+        .value {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+        .unit {
+            font-size: 1.5rem;
+            color: #6c757d;
+        }
+        .last-updated {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+        <h1 class="text-center mb-5">Room Environment Monitor</h1>
+        
+        <div class="row justify-content-center">
+            <!-- Temperature Card -->
+            <div class="col-md-5">
+                <div class="card temp-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Temperature</h5>
+                        <div class="my-3">
+                            <span id="temperature" class="value">--</span>
+                            <span class="unit">°C</span>
+                        </div>
+                        <div id="temp-timestamp" class="last-updated">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Humidity Card -->
+            <div class="col-md-5">
+                <div class="card humidity-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">Humidity</h5>
+                        <div class="my-3">
+                            <span id="humidity" class="value">--</span>
+                            <span class="unit">%</span>
+                        </div>
+                        <div id="humidity-timestamp" class="last-updated">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Reference to the database location
+        const dhtRef = database.ref('dht11');
+
+        // Listen for data changes
+        dhtRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                // Update temperature
+                if (data.temperature) {
+                    document.getElementById('temperature').textContent = data.temperature.toFixed(1);
+                    document.getElementById('temp-timestamp').textContent = `Last updated: ${formatTimestamp(data.timestamp)}`;
+                }
+                
+                // Update humidity
+                if (data.humidity) {
+                    document.getElementById('humidity').textContent = data.humidity.toFixed(1);
+                    document.getElementById('humidity-timestamp').textContent = `Last updated: ${formatTimestamp(data.timestamp)}`;
+                }
+            }
+        });
+
+        // Format timestamp
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '--';
+            const date = new Date(timestamp);
+            return date.toLocaleString();
+        }
+    </script>
+</body>
+</html>
