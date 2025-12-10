@@ -14,7 +14,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
       .card {
-        margin: 20px;
+        margin: 10px;
         border-radius: 15px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         transition: transform 0.3s;
@@ -28,6 +28,12 @@
       .humidity-card {
         border-top: 5px solid #4dabf7;
       }
+      .date-card {
+        border-top: 5px solid #51cf66;
+      }
+      .time-card {
+        border-top: 5px solid #fcc419;
+      }
       .value {
         font-size: 3rem;
         font-weight: bold;
@@ -40,16 +46,43 @@
         font-size: 0.9rem;
         color: #6c757d;
       }
+      .datetime-value {
+        font-size: 1.8rem;
+        font-weight: 500;
+      }
     </style>
   </head>
   <body class="bg-light">
-    <div class="container py-5">
-      <h1 class="text-center mb-5">Room Environment Monitor</h1>
+    <div class="container py-4">
+      <h1 class="text-center mb-4">MINI WEATHER STATION</h1>
+
+      <!-- Date and Time Cards -->
+      <div class="row justify-content-center mb-4">
+        <!-- Date Card -->
+        <div class="col-md-5">
+          <div class="card date-card h-100">
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+              <h5 class="card-title">Date</h5>
+              <div id="current-date" class="datetime-value my-2">--/--/----</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Time Card -->
+        <div class="col-md-5">
+          <div class="card time-card h-100">
+            <div class="card-body text-center d-flex flex-column justify-content-center">
+              <h5 class="card-title">Time</h5>
+              <div id="current-time" class="datetime-value my-2">--:--:--</div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div class="row justify-content-center">
         <!-- Temperature Card -->
         <div class="col-md-5">
-          <div class="card temp-card">
+          <div class="card temp-card h-100">
             <div class="card-body text-center">
               <h5 class="card-title">Temperature</h5>
               <div class="my-3">
@@ -63,7 +96,7 @@
 
         <!-- Humidity Card -->
         <div class="col-md-5">
-          <div class="card humidity-card">
+          <div class="card humidity-card h-100">
             <div class="card-body text-center">
               <h5 class="card-title">Humidity</h5>
               <div class="my-3">
@@ -79,16 +112,16 @@
 
     <script>
       // Your web app's Firebase configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyClAoKSRR283OF1p6mjDq9SbHODWz-NzeE",
-    authDomain: "weather-app-3e86c.firebaseapp.com",
-    databaseURL: "https://weather-app-3e86c-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "weather-app-3e86c",
-    storageBucket: "weather-app-3e86c.firebasestorage.app",
-    messagingSenderId: "435116026150",
-    appId: "1:435116026150:web:ed53297758df279e69f9e7",
-    measurementId: "G-M1EXMTSZ04"
-};
+      const firebaseConfig = {
+        apiKey: "AIzaSyClAoKSRR283OF1p6mjDq9SbHODWz-NzeE",
+        authDomain: "weather-app-3e86c.firebaseapp.com",
+        databaseURL: "https://weather-app-3e86c-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "weather-app-3e86c",
+        storageBucket: "weather-app-3e86c.firebasestorage.app",
+        messagingSenderId: "435116026150",
+        appId: "1:435116026150:web:ed53297758df279e69f9e7",
+        measurementId: "G-M1EXMTSZ04"
+      };
 
       // Initialize Firebase
       firebase.initializeApp(firebaseConfig);
@@ -97,35 +130,51 @@ const firebaseConfig = {
       // Reference to the database location
       const dhtRef = database.ref("dht11");
 
+      // Update date and time
+      function updateDateTime() {
+        const now = new Date();
+        
+        // Update date (e.g., "December 10, 2025")
+        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').textContent = now.toLocaleDateString(undefined, dateOptions);
+        
+        // Update time (e.g., "11:45:30 PM")
+        const timeOptions = { 
+          hour: '2-digit', 
+          minute: '2-digit', 
+          second: '2-digit', 
+          hour12: true 
+        };
+        document.getElementById('current-time').textContent = now.toLocaleTimeString(undefined, timeOptions);
+      }
+
+      // Update date and time immediately and then every second
+      updateDateTime();
+      setInterval(updateDateTime, 1000);
+
       // Listen for data changes
       dhtRef.on("value", (snapshot) => {
         const data = snapshot.val();
         if (data) {
           // Update temperature
           if (data.temperature) {
-            document.getElementById("temperature").textContent =
-              data.temperature.toFixed(1);
-            document.getElementById(
-              "temp-timestamp"
-            ).textContent = `Last updated: ${formatTimestamp(data.timestamp)}`;
+            document.getElementById("temperature").textContent = data.temperature.toFixed(1);
+            document.getElementById("temp-timestamp").textContent = `Updated: ${formatTimestamp(data.timestamp)}`;
           }
 
           // Update humidity
           if (data.humidity) {
-            document.getElementById("humidity").textContent =
-              data.humidity.toFixed(1);
-            document.getElementById(
-              "humidity-timestamp"
-            ).textContent = `Last updated: ${formatTimestamp(data.timestamp)}`;
+            document.getElementById("humidity").textContent = data.humidity.toFixed(1);
+            document.getElementById("humidity-timestamp").textContent = `Updated: ${formatTimestamp(data.timestamp)}`;
           }
         }
       });
 
       // Format timestamp
       function formatTimestamp(timestamp) {
-        if (!timestamp) return "--";
+        if (!timestamp) return '--';
         const date = new Date(timestamp);
-        return date.toLocaleString();
+        return date.toLocaleTimeString();
       }
     </script>
   </body>
