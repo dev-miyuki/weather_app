@@ -3,26 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ESP32 DHT11 Monitor</title>
-    <!-- Bootstrap CSS -->
+    <title>MINI WEATHER STATION</title>
     <link
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
     <style>
+      body {
+        background-color: #a1e7f7a1;
+      }
       .card {
-        margin: 10px;
         border-radius: 15px;
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         transition: transform 0.3s;
-      }
-      .card:hover {
-        transform: translateY(-5px);
       }
       .temp-card {
         border-top: 5px solid #ff6b6b;
@@ -58,274 +58,475 @@
         height: 300px;
         margin-bottom: 20px;
       }
+      .cont {
+        padding: 10px;
+        width: 95%;
+        height: 100vh;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .history-table {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      .table thead th {
+        position: sticky;
+        top: 0;
+        background-color: #0d6efd;
+        color: white;
+        z-index: 10;
+      }
+      .table-container {
+        max-height: 400px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .table-container tbody::-webkit-scrollbar {
+        display: none;
+      }
+
+      .table-container tbody {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      .table-container table {
+        margin-bottom: 0;
+      }
+
+      .table-container thead {
+        flex-shrink: 0;
+      }
+
+      .table-container tbody {
+        overflow-y: auto;
+        flex: 1;
+        display: block;
+      }
+
+      .table-container thead,
+      .table-container tbody tr {
+        display: table;
+        width: 100%;
+        table-layout: fixed;
+      }
+
+      .table-container thead {
+        width: 100%;
+      }
+
+      .table-container tbody {
+        display: block;
+        overflow-y: auto;
+        max-height: 300px;
+      }
+
+      .table-container th,
+      .table-container td {
+        width: 25%; 
+      }
+      .icon-container {
+        color: #555;
+        margin-bottom: 10px;
+      }
+      .temp-card .icon-container {
+        color: #dc3545; 
+      }
+
+      .humidity-card .icon-container {
+        color: #0d6efd;
+      }
+
+      .date-card .icon-container {
+        color: #198754; 
+      }
+
+      .time-card .icon-container {
+        color: #6f42c1;
+      }
     </style>
   </head>
-  <body class="bg-light">
-    <div class="container py-4">
-      <h1 class="text-center mb-4">MINI WEATHER STATION</h1>
-
-      <!-- Date and Time Cards -->
-      <div class="row justify-content-center mb-4">
-        <!-- Date Card -->
-        <div class="col-md-5">
+  <body>
+    <div class="cont">
+      <h1 class="text-center mb-4 fw-bold">MINI WEATHER STATION</h1>
+      <div class="row mb-4" style="width: 100%; margin: 0">
+        <div class="col-md-3">
           <div class="card date-card h-100">
-            <div class="card-body text-center d-flex flex-column justify-content-center">
+            <div class="card-body text-center d-flex flex-column">
+              <div class="icon-container mb-2">
+                <i class="fas fa-calendar-alt fa-2x"></i>
+              </div>
               <h5 class="card-title">Date</h5>
-              <div id="current-date" class="datetime-value my-2">--/--/----</div>
+              <div id="current-date" class="datetime-value my-2">
+                --/--/----
+              </div>
             </div>
           </div>
         </div>
-        
-        <!-- Time Card -->
-        <div class="col-md-5">
+
+        <div class="col-md-3">
           <div class="card time-card h-100">
-            <div class="card-body text-center d-flex flex-column justify-content-center">
+            <div class="card-body text-center d-flex flex-column">
+              <div class="icon-container mb-2">
+                <i class="fas fa-clock fa-2x"></i>
+              </div>
               <h5 class="card-title">Time</h5>
-              <div id="current-time" class="datetime-value my-2">--:--:--</div>
+              <div
+                id="current-time"
+                class="datetime-value my-2"
+                style="font-size: 34px"
+              >
+                --:--:--
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card temp-card h-100">
+            <div class="card-body text-center d-flex flex-column">
+              <div class="icon-container mb-2">
+                <i class="fas fa-thermometer-half fa-2x"></i>
+              </div>
+              <h5 class="card-title">Temperature</h5>
+              <div class="display-4" id="temperature">--<small>°C</small></div>
+              <div class="text-muted" id="temp-timestamp">--:--:--</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="card humidity-card h-100">
+            <div class="card-body text-center d-flex flex-column">
+              <div class="icon-container mb-2">
+                <i class="fas fa-tint fa-2x"></i>
+              </div>
+              <h5 class="card-title">Humidity</h5>
+              <div class="display-4" id="humidity">--<small>%</small></div>
+              <div class="text-muted" id="humidity-timestamp">--:--:--</div>
             </div>
           </div>
         </div>
       </div>
 
       <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card temp-card h-100">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Temperature</h5>
-                        <div class="my-3">
-                            <span id="temperature" class="value">--</span>
-                            <span class="unit">°C</span>
-                        </div>
-                        <div id="temp-timestamp" class="last-updated">--</div>
-                    </div>
-                </div>
-            <div class="col-md-6">
-                <div class="card mb-4">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">Temperature Over Time</h5>
-                        <div class="chart-container">
-                            <canvas id="tempChart"></canvas>
-                        </div>
-                    </div>
-                </div>
+        <div class="col-md-6">
+          <div class="card mb-4">
+            <div class="card-body">
+              <h5 class="card-title text-center">Temperature Over Time</h5>
+              <div class="chart-container">
+                <canvas id="tempChart"></canvas>
+              </div>
             </div>
+          </div>
         </div>
-            <div class="col-md-6">
-                <div class="card humidity-card h-100">
-                    <div class="card-body text-center">
-                        <h5 class="card-title">Humidity</h5>
-                        <div class="my-3">
-                            <span id="humidity" class="value">--</span>
-                            <span class="unit">%</span>
-                        </div>
-                        <div id="humidity-timestamp" class="last-updated">--</div>
-                    </div>
-                </div>
+
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title text-center">Humidity Over Time</h5>
+              <div class="chart-container">
+                <canvas id="humidityChart"></canvas>
+              </div>
             </div>
-            <div class="col-md-6">       
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title text-center">Humidity Over Time</h5>
-                        <div class="chart-container">
-                            <canvas id="humidityChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
+          </div>
         </div>
+      </div>
+
+      <div class="row justify-content-center mt-4">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title text-center mb-3">Historical Data</h5>
+              <div class="table-container">
+                <table class="table table-striped table-hover mb-0">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Time</th>
+                      <th>Temp (°C)</th>
+                      <th>Humid (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="historyTableBody" class="scrollable-tbody">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-      // Your web app's Firebase configuration
       const firebaseConfig = {
         apiKey: "AIzaSyClAoKSRR283OF1p6mjDq9SbHODWz-NzeE",
         authDomain: "weather-app-3e86c.firebaseapp.com",
-        databaseURL: "https://weather-app-3e86c-default-rtdb.asia-southeast1.firebasedatabase.app",
+        databaseURL:
+          "https://weather-app-3e86c-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "weather-app-3e86c",
         storageBucket: "weather-app-3e86c.firebasestorage.app",
         messagingSenderId: "435116026150",
         appId: "1:435116026150:web:ed53297758df279e69f9e7",
-        measurementId: "G-M1EXMTSZ04"
+        measurementId: "G-M1EXMTSZ04",
       };
 
-      // Initialize Firebase
       firebase.initializeApp(firebaseConfig);
+
+      firebase.database().goOnline();
+
       const database = firebase.database();
       const dhtRef = database.ref("dht11");
+      const historyRef = database.ref("history");
 
-      // Chart variables
       let tempChart, humidityChart;
-      const maxDataPoints = 20; // Number of data points to show
+      const maxDataPoints = 20;
       const tempData = Array(maxDataPoints).fill(null);
       const humidityData = Array(maxDataPoints).fill(null);
-      const timeLabels = Array(maxDataPoints).fill('');
+      const timeLabels = Array(maxDataPoints).fill("");
 
-      // Initialize charts
       function initCharts() {
-        const tempCtx = document.getElementById('tempChart').getContext('2d');
-        const humidityCtx = document.getElementById('humidityChart').getContext('2d');
-        
-        // Common chart options
+        const tempCtx = document.getElementById("tempChart").getContext("2d");
+        const humidityCtx = document
+          .getElementById("humidityChart")
+          .getContext("2d");
+
         const chartOptions = {
           responsive: true,
           maintainAspectRatio: false,
-          animation: {
-            duration: 0 // Disable animation for better performance
-          },
-          scales: {
-            x: {
-              display: true,
-              title: {
-                display: true,
-                text: 'Time'
-              }
-            },
-            y: {
-              display: true,
-              title: {
-                display: true
-              }
-            }
-          }
+          animation: { duration: 0 },
         };
 
-        // Temperature Chart
         tempChart = new Chart(tempCtx, {
-          type: 'line',
+          type: "line",
           data: {
             labels: timeLabels,
-            datasets: [{
-              label: 'Temperature (°C)',
-              data: tempData,
-              borderColor: 'rgb(255, 99, 132)',
-              backgroundColor: 'rgba(255, 99, 132, 0.1)',
-              borderWidth: 2,
-              tension: 0.1,
-              fill: true
-            }]
+            datasets: [
+              {
+                label: "Temperature (°C)",
+                data: tempData,
+                borderColor: "rgb(255, 99, 132)",
+                backgroundColor: "rgba(255, 99, 132, 0.1)",
+                borderWidth: 2,
+                tension: 0.1,
+                fill: true,
+              },
+            ],
           },
-          options: {
-            ...chartOptions,
-            scales: {
-              ...chartOptions.scales,
-              y: {
-                ...chartOptions.scales.y,
-                title: {
-                  display: true,
-                  text: 'Temperature (°C)'
-                }
-              }
-            }
-          }
+          options: chartOptions,
         });
 
-        // Humidity Chart
         humidityChart = new Chart(humidityCtx, {
-          type: 'line',
+          type: "line",
           data: {
             labels: timeLabels,
-            datasets: [{
-              label: 'Humidity (%)',
-              data: humidityData,
-              borderColor: 'rgb(54, 162, 235)',
-              backgroundColor: 'rgba(54, 162, 235, 0.1)',
-              borderWidth: 2,
-              tension: 0.1,
-              fill: true
-            }]
+            datasets: [
+              {
+                label: "Humidity (%)",
+                data: humidityData,
+                borderColor: "rgb(54, 162, 235)",
+                backgroundColor: "rgba(54, 162, 235, 0.1)",
+                borderWidth: 2,
+                tension: 0.1,
+                fill: true,
+              },
+            ],
           },
           options: {
             ...chartOptions,
             scales: {
-              ...chartOptions.scales,
               y: {
-                ...chartOptions.scales.y,
-                title: {
-                  display: true,
-                  text: 'Humidity (%)'
-                },
                 min: 0,
-                max: 100
-              }
-            }
-          }
+                max: 100,
+              },
+            },
+          },
         });
       }
 
-      // Update date and time
       function updateDateTime() {
         const now = new Date();
-        const dateOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('current-date').textContent = now.toLocaleDateString(undefined, dateOptions);
-        
-        const timeOptions = { 
-          hour: '2-digit', 
-          minute: '2-digit', 
-          second: '2-digit', 
-          hour12: true 
-        };
-        document.getElementById('current-time').textContent = now.toLocaleTimeString(undefined, timeOptions);
+        const dateOptions = { year: "numeric", month: "long", day: "numeric" };
+        document.getElementById("current-date").textContent =
+          now.toLocaleDateString(undefined, dateOptions);
+
+        let hours = now.getHours();
+        const ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const minutes = now.getMinutes().toString().padStart(2, "0");
+        const seconds = now.getSeconds().toString().padStart(2, "0");
+
+        const timeHTML = `
+        <div style="line-height: 1.2;">
+            <div>${hours}:${minutes}:${seconds}</div>
+            <div style="font-size: 1em; opacity: 0.8;">${ampm}</div>
+        </div>
+    `;
+
+        document.getElementById("current-time").innerHTML = timeHTML;
       }
 
-      // Format timestamp
       function formatTimestamp(timestamp) {
-        if (!timestamp) return '--';
-        const date = new Date(timestamp);
-        return date.toLocaleTimeString();
+        if (!timestamp) return "--";
+        return new Date(timestamp).toLocaleTimeString();
       }
 
-      // Add new data point to the charts
+      function saveToHistory(temperature, humidity, timestamp) {
+        const historyItem = {
+          temperature: parseFloat(temperature),
+          humidity: parseFloat(humidity),
+          timestamp: timestamp,
+          date: new Date(timestamp).toLocaleDateString(),
+          time: new Date(timestamp).toLocaleTimeString(),
+        };
+
+        historyRef.push(historyItem);
+
+        historyRef.limitToLast(100).once("value", (snapshot) => {
+          if (snapshot.numChildren() > 100) {
+            let count = 0;
+            const updates = {};
+            snapshot.forEach((child) => {
+              if (++count <= snapshot.numChildren() - 100) {
+                updates[child.key] = null;
+              }
+            });
+            historyRef.update(updates);
+          }
+        });
+      }
+
+      function loadHistory() {
+        historyRef
+          .orderByChild("timestamp")
+          .limitToLast(50)
+          .once("value", (snapshot) => {
+            const history = [];
+            snapshot.forEach((child) => {
+              history.push(child.val());
+            });
+
+            history.sort((a, b) => b.timestamp - a.timestamp);
+
+            updateHistoryTable(history);
+          });
+      }
+
+      function updateHistoryTable(history) {
+        const tbody = document.getElementById("historyTableBody");
+        tbody.innerHTML = history
+          .map(
+            (item) => `
+            <tr>
+                <td>${item.date}</td>
+                <td>${item.time}</td>
+                <td>${item.temperature.toFixed(1)} °C</td>
+                <td>${item.humidity.toFixed(1)}%</td>
+            </tr>
+        `
+          )
+          .join("");
+      }
+
+      function loadInitialChartData() {
+        return new Promise((resolve) => {
+          historyRef
+            .orderByChild("timestamp")
+            .limitToLast(maxDataPoints)
+            .once("value")
+            .then((snapshot) => {
+              const history = [];
+              snapshot.forEach((child) => {
+                history.push(child.val());
+              });
+
+              history.sort((a, b) => a.timestamp - b.timestamp);
+
+              tempData.length = 0;
+              humidityData.length = 0;
+              timeLabels.length = 0;
+
+              history.forEach((item) => {
+                const date = new Date(item.timestamp);
+                timeLabels.push(date.toLocaleTimeString());
+                tempData.push(parseFloat(item.temperature));
+                humidityData.push(parseFloat(item.humidity));
+              });
+
+              while (timeLabels.length < maxDataPoints) {
+                timeLabels.unshift("");
+                tempData.unshift(null);
+                humidityData.unshift(null);
+              }
+
+              resolve();
+            })
+            .catch((error) => {
+              console.error("Error loading initial chart data:", error);
+              resolve();
+            });
+        });
+      }
+
       function addDataPoint(temperature, humidity, timestamp) {
-        // Shift all data points to the left
         tempData.shift();
         humidityData.shift();
         timeLabels.shift();
-        
-        // Add new data points
+
         const date = new Date(timestamp);
         timeLabels.push(date.toLocaleTimeString());
         tempData.push(temperature);
         humidityData.push(humidity);
-        
-        // Update charts
-        tempChart.update('none');
-        humidityChart.update('none');
+
+        if (tempChart && humidityChart) {
+          tempChart.update("none");
+          humidityChart.update("none");
+        }
+
+        saveToHistory(temperature, humidity, timestamp);
       }
 
-      // Initialize charts when the page loads
-      document.addEventListener('DOMContentLoaded', () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         initCharts();
         updateDateTime();
         setInterval(updateDateTime, 1000);
-        
-        // Listen for data changes
+
+        await loadInitialChartData();
+        loadHistory();
+
         dhtRef.on("value", (snapshot) => {
           const data = snapshot.val();
-          if (data) {
-            // Update temperature
-            if (data.temperature) {
-              document.getElementById("temperature").textContent = data.temperature.toFixed(1);
-              document.getElementById("temp-timestamp").textContent = `Updated: ${formatTimestamp(data.timestamp)}`;
-            }
+          if (
+            data &&
+            data.temperature !== undefined &&
+            data.humidity !== undefined
+          ) {
+            document.getElementById("temperature").innerHTML = data.temperature.toFixed(1) + '<small>°C</small>';
+            document.getElementById("humidity").innerHTML = data.humidity.toFixed(1) + '<small>%</small>';
+            const timestamp = data.timestamp || Date.now();
+            document.getElementById(
+              "temp-timestamp"
+            ).textContent = `Updated: ${formatTimestamp(timestamp)}`;
+            document.getElementById(
+              "humidity-timestamp"
+            ).textContent = `Updated: ${formatTimestamp(timestamp)}`;
 
-            // Update humidity
-            if (data.humidity) {
-              document.getElementById("humidity").textContent = data.humidity.toFixed(1);
-              document.getElementById("humidity-timestamp").textContent = `Updated: ${formatTimestamp(data.timestamp)}`;
-            }
-            
-            // Update charts if we have both temperature and humidity
-            if (data.temperature && data.humidity) {
-              addDataPoint(
-                parseFloat(data.temperature),
-                parseFloat(data.humidity),
-                data.timestamp
-              );
-            }
+            addDataPoint(
+              parseFloat(data.temperature),
+              parseFloat(data.humidity),
+              timestamp
+            );
           }
+        });
+
+        historyRef.limitToLast(1).on("child_added", () => {
+          loadHistory();
         });
       });
     </script>
   </body>
 </html>
-
